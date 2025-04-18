@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-AccountingGameApplication<accountingGame>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.example.accountingGame.AccountingGameApplication",
+            "projectName": "accountingGame",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
