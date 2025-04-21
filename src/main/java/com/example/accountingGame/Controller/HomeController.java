@@ -11,6 +11,10 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
 public class HomeController {
+    // @GetMapping({"/home"})
+    // public String home() {
+    //     return "Hello World";
+    // }
     @GetMapping({"/home"})
     public ResponseEntity<Map<String, String>> home() {
         Map<String, String> response = new HashMap<>();

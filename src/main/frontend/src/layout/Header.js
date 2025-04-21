@@ -11,7 +11,7 @@ const Header = () => {
                     <Navbar.Toggle aria-controls="navbar-content" />
                     <Navbar.Collapse id="navbar-content">
                         <Nav className="me-auto">
-                            <Nav.Link as={Link} to="/">Home</Nav.Link>
+                            <Nav.Link as={Link} to="/home">Home</Nav.Link>
                             {/*<Nav.Link as={Link} to="/regcertinfo">인증서등록</Nav.Link>*/}
 
                             {/* ✅ NavDropdown 사용 */}
