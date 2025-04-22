@@ -1,4 +1,4 @@
-package com.example.accountingGame.Controller;
+package com.example.accountingGame.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;

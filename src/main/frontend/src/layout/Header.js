@@ -7,20 +7,21 @@ const Header = () => {
         <header>
             <Navbar bg="dark" variant="dark" expand="lg">
                 <Container>
-                    <Navbar.Brand href="/">Navbar</Navbar.Brand>
+                    <Navbar.Brand as={Link} to="/">회계 게임</Navbar.Brand>
                     <Navbar.Toggle aria-controls="navbar-content" />
                     <Navbar.Collapse id="navbar-content">
                         <Nav className="me-auto">
-                            <Nav.Link as={Link} to="/home">Home</Nav.Link>
-                            {/*<Nav.Link as={Link} to="/regcertinfo">인증서등록</Nav.Link>*/}
-
-                            {/* ✅ NavDropdown 사용 */}
-                            {/*<NavDropdown title="인증서" id="navbarDropdown">*/}
-                            {/*    <NavDropdown.Item as={Link} to="/regcertinfo">인증서등록</NavDropdown.Item>*/}
-                            {/*    <NavDropdown.Item as={Link} to="/getcertinfo">인증서조회</NavDropdown.Item>*/}
-                            {/*    <NavDropdown.Item as={Link} to="/uptcertinfo">인증서변경</NavDropdown.Item>*/}
-                            {/*    <NavDropdown.Item as={Link} to="/delcertinfo">인증서삭제</NavDropdown.Item>*/}
-                            {/*</NavDropdown>*/}
+                            <Nav.Link as={Link} to="/home">홈</Nav.Link>
+                            <Nav.Link as={Link} to="/register">회원가입</Nav.Link>
+                            <Nav.Link as={Link} to="/login">로그인</Nav.Link>
+                            
+                            {/* API 메뉴 드롭다운 */}
+                            <NavDropdown title="API 메뉴" id="api-dropdown">
+                                <NavDropdown.Item as={Link} to="/api/auth/login">로그인 API</NavDropdown.Item>
+                                <NavDropdown.Item as={Link} to="/api/users/register">회원가입 API</NavDropdown.Item>
+                                <NavDropdown.Divider />
+                                <NavDropdown.Item as={Link} to="/api/users">사용자 목록 API</NavDropdown.Item>
+                            </NavDropdown>
                         </Nav>
                     </Navbar.Collapse>
                 </Container>
