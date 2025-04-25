@@ -1,0 +1,81 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.4'
+	id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '17'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.mariadb.jdbc:mariadb-java-client'
+	implementation 'org.projectlombok:lombok'
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+def webappDir = "$projectDir/src/main/frontend"
+
+sourceSets {
+	main {
+		resources {
+			srcDirs = ["$projectDir/src/main/resources"]
+		}
+	}
+}
+
+def shouldBuildReact = project.hasProperty('buildReact') ? project.getProperty('buildReact').toBoolean() : false
+
+task installReact(type: Exec) {
+	workingDir "$webappDir"
+	commandLine "npm", "install"
+	enabled = shouldBuildReact
+}
+
+task buildReact(type: Exec) {
+	workingDir "$webappDir"
+	commandLine "npm", "run", "build"
+	enabled = shouldBuildReact
+	dependsOn installReact
+}
+
+task copyWebApp(type: Copy) {
+	from "$webappDir/build"
+	into "$projectDir/src/main/resources/static"
+	enabled = shouldBuildReact
+	dependsOn buildReact
+}
+
+if (shouldBuildReact) {
+	processResources {
+		dependsOn copyWebApp
+	}
+	
+	bootRun {
+		dependsOn copyWebApp
+	}
+}
