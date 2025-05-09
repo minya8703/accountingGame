@@ -3,6 +3,7 @@ package com.example.accountingGame.service;
 import com.example.accountingGame.entity.Inventory;
 import com.example.accountingGame.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,10 +12,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class InventoryService {
 
-    private final InventoryRepository inventoryRepository;
+    @Autowired
+    private InventoryRepository inventoryRepository;
 
     public List<Inventory> getAllInventory() {
         return inventoryRepository.findAll();

@@ -83,18 +83,6 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    private BigDecimal getSizeMultiplier(PizzaSize size) {
-        switch (size) {
-            case SMALL:
-                return new BigDecimal("0.8");
-            case LARGE:
-                return new BigDecimal("1.2");
-            case MEDIUM:
-            default:
-                return BigDecimal.ONE;
-        }
-    }
-
     // 주문 상태 업데이트
     @Transactional
     public Order updateOrderStatus(Long orderId, String statusName) {

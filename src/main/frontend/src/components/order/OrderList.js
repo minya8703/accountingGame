@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -23,52 +23,48 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Alert,
+  CircularProgress,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
+import axios from 'axios';
 
 const OrderList = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState('ALL');
-  const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const [page, setPage] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-
-  useEffect(() => {
-    fetchOrders();
-  }, [selectedStatus, page]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchOrders = async () => {
     try {
-      const response = selectedStatus === 'ALL'
-        ? await axios.get(`http://localhost:8080/api/orders?page=${page - 1}&size=${rowsPerPage}`)
-        : await axios.get(`http://localhost:8080/api/orders/status/${selectedStatus}?page=${page - 1}&size=${rowsPerPage}`);
-      setOrders(response.data.content);
-    } catch (error) {
-      console.error('주문 목록을 불러오는데 실패했습니다:', error);
+      setLoading(true);
+      setError(null);
+      const response = await axios.get('/api/orders');
+      setOrders(response.data);
+    } catch (err) {
+      setError('주문 목록을 불러오는 중 오류가 발생했습니다.');
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      await axios.put(`http://localhost:8080/api/orders/${orderId}/status?status=${newStatus}`);
+      await axios.put(`/api/orders/${orderId}/status`, { status: newStatus });
       fetchOrders();
-    } catch (error) {
-      console.error('주문 상태 변경에 실패했습니다:', error);
-    }
-  };
-
-  const handleCancel = async (orderId) => {
-    if (window.confirm('정말로 이 주문을 취소하시겠습니까?')) {
-      try {
-        await axios.post(`http://localhost:8080/api/orders/${orderId}/cancel`);
-        fetchOrders();
-      } catch (error) {
-        console.error('주문 취소에 실패했습니다:', error);
-      }
+    } catch (err) {
+      console.error('Error updating order status:', err);
     }
   };
 
@@ -103,6 +99,22 @@ const OrderList = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mt: 2 }}>
+        {error}
+      </Alert>
+    );
+  }
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -121,7 +133,7 @@ const OrderList = () => {
           value={selectedStatus}
           onChange={(e, newValue) => {
             setSelectedStatus(newValue);
-            setPage(1);
+            setPage(0);
           }}
           variant="scrollable"
           scrollButtons="auto"
@@ -151,101 +163,94 @@ const OrderList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>{order.id}</TableCell>
-                <TableCell>{new Date(order.orderDate).toLocaleString()}</TableCell>
-                <TableCell>{order.customerName}</TableCell>
-                <TableCell>{order.customerPhone}</TableCell>
-                <TableCell>{order.totalAmount.toLocaleString()}원</TableCell>
-                <TableCell>
-                  <Chip
-                    label={getStatusLabel(order.status.statusName)}
-                    color={getStatusColor(order.status.statusName)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleViewDetails(order)}
-                    >
-                      상세보기
-                    </Button>
-                    {order.status.statusName === 'PENDING' && (
+            {orders
+              .filter(order => selectedStatus === 'ALL' || order.status === selectedStatus)
+              .slice(page * 10, (page + 1) * 10)
+              .map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell>{order.id}</TableCell>
+                  <TableCell>{new Date(order.orderDate).toLocaleString()}</TableCell>
+                  <TableCell>{order.customerName}</TableCell>
+                  <TableCell>{order.customerPhone}</TableCell>
+                  <TableCell>{order.totalAmount.toLocaleString()}원</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={getStatusLabel(order.status)}
+                      color={getStatusColor(order.status)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
                       <Button
-                        variant="contained"
-                        color="primary"
+                        variant="outlined"
                         size="small"
-                        onClick={() => handleStatusChange(order.id, 'CONFIRMED')}
+                        onClick={() => handleViewDetails(order)}
                       >
-                        확인
+                        상세보기
                       </Button>
-                    )}
-                    {order.status.statusName === 'CONFIRMED' && (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        onClick={() => handleStatusChange(order.id, 'PREPARING')}
-                      >
-                        준비 시작
-                      </Button>
-                    )}
-                    {order.status.statusName === 'PREPARING' && (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        onClick={() => handleStatusChange(order.id, 'READY')}
-                      >
-                        준비 완료
-                      </Button>
-                    )}
-                    {order.status.statusName === 'READY' && (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        onClick={() => handleStatusChange(order.id, 'DELIVERING')}
-                      >
-                        배달 시작
-                      </Button>
-                    )}
-                    {order.status.statusName === 'DELIVERING' && (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        onClick={() => handleStatusChange(order.id, 'COMPLETED')}
-                      >
-                        배달 완료
-                      </Button>
-                    )}
-                    {['PENDING', 'CONFIRMED', 'PREPARING'].includes(order.status.statusName) && (
-                      <Button
-                        variant="contained"
-                        color="error"
-                        size="small"
-                        onClick={() => handleCancel(order.id)}
-                      >
-                        취소
-                      </Button>
-                    )}
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
+                      {order.status === 'PENDING' && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={() => handleStatusChange(order.id, 'CONFIRMED')}
+                        >
+                          확인
+                        </Button>
+                      )}
+                      {order.status === 'CONFIRMED' && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={() => handleStatusChange(order.id, 'PREPARING')}
+                        >
+                          준비 시작
+                        </Button>
+                      )}
+                      {order.status === 'PREPARING' && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={() => handleStatusChange(order.id, 'READY')}
+                        >
+                          준비 완료
+                        </Button>
+                      )}
+                      {order.status === 'READY' && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={() => handleStatusChange(order.id, 'DELIVERING')}
+                        >
+                          배달 시작
+                        </Button>
+                      )}
+                      {order.status === 'DELIVERING' && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={() => handleStatusChange(order.id, 'COMPLETED')}
+                        >
+                          배달 완료
+                        </Button>
+                      )}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </TableContainer>
 
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
         <Pagination
-          count={10}
-          page={page}
-          onChange={(e, value) => setPage(value)}
+          count={Math.ceil(orders.length / 10)}
+          page={page + 1}
+          onChange={(e, value) => setPage(value - 1)}
           color="primary"
         />
       </Box>
@@ -294,20 +299,7 @@ const OrderList = () => {
                         <ListItem key={item.id}>
                           <ListItemText
                             primary={`${item.pizza.name} (${item.size}) x ${item.quantity}`}
-                            secondary={
-                              <Box>
-                                <Typography variant="body2">
-                                  판매가: {item.price.toLocaleString()}원
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  원가: {item.cost.toLocaleString()}원
-                                </Typography>
-                                <Typography variant="body2" color="primary">
-                                  이익: {(item.price - item.cost).toLocaleString()}원
-                                  (이익률: {Math.round((item.price - item.cost) / item.price * 100)}%)
-                                </Typography>
-                              </Box>
-                            }
+                            secondary={`${item.price.toLocaleString()}원`}
                           />
                         </ListItem>
                       ))}
@@ -319,30 +311,7 @@ const OrderList = () => {
               <ListItem>
                 <ListItemText
                   primary="총 주문 금액"
-                  secondary={
-                    <Box>
-                      <Typography variant="body1">
-                        판매가: {selectedOrder.totalAmount.toLocaleString()}원
-                      </Typography>
-                      <Typography variant="body1" color="text.secondary">
-                        총 원가: {selectedOrder.orderItems.reduce((sum, item) => sum + item.cost, 0).toLocaleString()}원
-                      </Typography>
-                      <Typography variant="h6" color="primary">
-                        총 이익: {
-                          (selectedOrder.totalAmount - 
-                          selectedOrder.orderItems.reduce((sum, item) => sum + item.cost, 0))
-                          .toLocaleString()
-                        }원
-                        (이익률: {
-                          Math.round(
-                            (selectedOrder.totalAmount - 
-                            selectedOrder.orderItems.reduce((sum, item) => sum + item.cost, 0)) / 
-                            selectedOrder.totalAmount * 100
-                          )
-                        }%)
-                      </Typography>
-                    </Box>
-                  }
+                  secondary={`${selectedOrder.totalAmount.toLocaleString()}원`}
                 />
               </ListItem>
             </List>

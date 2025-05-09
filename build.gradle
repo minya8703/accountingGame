@@ -1,14 +1,15 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.2.4'
-	id 'io.spring.dependency-management' version '1.1.4'
+	id 'org.springframework.boot' version '3.4.4'
+	id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	sourceCompatibility = '17'
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
 }
 
 configurations {
@@ -22,16 +23,13 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.mariadb.jdbc:mariadb-java-client'
-	implementation 'org.projectlombok:lombok'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
 	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
@@ -43,39 +41,40 @@ def webappDir = "$projectDir/src/main/frontend"
 sourceSets {
 	main {
 		resources {
-			srcDirs = ["$projectDir/src/main/resources"]
+			srcDirs = ["$webappDir/build", "$projectDir/src/main/resources"]
 		}
 	}
 }
 
-def shouldBuildReact = project.hasProperty('buildReact') ? project.getProperty('buildReact').toBoolean() : false
-
-task installReact(type: Exec) {
-	workingDir "$webappDir"
-	commandLine "npm", "install"
-	enabled = shouldBuildReact
-}
-
-task buildReact(type: Exec) {
-	workingDir "$webappDir"
-	commandLine "npm", "run", "build"
-	enabled = shouldBuildReact
-	dependsOn installReact
+processResources {
+	dependsOn "copyWebApp"
 }
 
 task copyWebApp(type: Copy) {
+	dependsOn "buildReact"
 	from "$webappDir/build"
 	into "$projectDir/src/main/resources/static"
-	enabled = shouldBuildReact
-	dependsOn buildReact
 }
 
-if (shouldBuildReact) {
-	processResources {
-		dependsOn copyWebApp
+task buildReact(type: Exec) {
+	dependsOn "installReact"
+	workingDir "$webappDir"
+	inputs.dir "$webappDir"
+	group = BasePlugin.BUILD_GROUP
+	commandLine getNpmCommand(), "run", "build"
+}
+
+task installReact(type: Exec) {
+	workingDir "$webappDir"
+	inputs.dir "$webappDir"
+	group = BasePlugin.BUILD_GROUP
+	commandLine getNpmCommand(), "install"
+}
+
+def getNpmCommand() {
+	def npmCommand = "npm"
+	if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+		npmCommand = "npm.cmd"
 	}
-	
-	bootRun {
-		dependsOn copyWebApp
-	}
+	return npmCommand
 }

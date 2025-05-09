@@ -10,17 +10,20 @@ public class WebConfig implements WebMvcConfigurer {
     
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/static/**")
+                .addResourceLocations("classpath:/static/")
+                .setCachePeriod(0);
+        
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/")
-                .addResourceLocations("classpath:/public/")
-                .addResourceLocations("classpath:/resources/")
-                .addResourceLocations("classpath:/META-INF/resources/");
+                .setCachePeriod(0);
     }
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        // Forward to home page for all paths
+        // API 경로를 제외한 모든 요청을 index.html로 포워딩
         registry.addViewController("/").setViewName("forward:/index.html");
-        registry.addViewController("/**").setViewName("forward:/index.html");
+        registry.addViewController("/{x:[\\w\\-]+}").setViewName("forward:/index.html");
+        registry.addViewController("/{x:^(?!api$).*$}/**/{y:[\\w\\-]+}").setViewName("forward:/index.html");
     }
 } 

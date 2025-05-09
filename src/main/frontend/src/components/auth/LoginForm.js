@@ -55,6 +55,7 @@ const LoginForm = () => {
 
       if (data.token) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('username', formData.username);
         navigate('/');
       }
     } catch (err) {

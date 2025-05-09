@@ -17,6 +17,7 @@ const Register = () => {
     username: '',
     password: '',
     confirmPassword: '',
+    email: ''
   });
   const [error, setError] = useState('');
 
@@ -34,9 +35,10 @@ const Register = () => {
       return;
     }
     try {
-      await axios.post('http://localhost:8080/api/auth/register', {
+      await axios.post('http://localhost:8080/api/users/register', {
         username: formData.username,
         password: formData.password,
+        email: formData.email
       });
       navigate('/');
     } catch (error) {
@@ -61,6 +63,18 @@ const Register = () => {
             autoComplete="username"
             autoFocus
             value={formData.username}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="email"
+            label="이메일"
+            type="email"
+            id="email"
+            autoComplete="email"
+            value={formData.email}
             onChange={handleChange}
           />
           <TextField

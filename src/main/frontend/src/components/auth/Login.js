@@ -2,14 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Button,
   TextField,
+  Button,
   Typography,
-  Container,
   Paper,
-  Link,
 } from '@mui/material';
-import axios from 'axios';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -17,78 +14,77 @@ const Login = () => {
     username: '',
     password: '',
   });
-  const [error, setError] = useState('');
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/login', formData);
-      localStorage.setItem('token', response.data.token);
-      navigate('/order');
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('로그인에 실패했습니다.');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      navigate('/');
     } catch (error) {
-      setError('로그인에 실패했습니다. 다시 시도해주세요.');
+      console.error('Error:', error);
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper elevation={3} sx={{ p: 4, mt: 8 }}>
-        <Typography component="h1" variant="h5" align="center" gutterBottom>
-          피자 가게 관리
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        로그인
+      </Typography>
+      <Paper sx={{ p: 3, maxWidth: 400, mx: 'auto' }}>
+        <form onSubmit={handleSubmit}>
           <TextField
-            margin="normal"
-            required
             fullWidth
-            id="username"
             label="사용자 이름"
             name="username"
-            autoComplete="username"
-            autoFocus
             value={formData.username}
             onChange={handleChange}
-          />
-          <TextField
             margin="normal"
             required
+          />
+          <TextField
             fullWidth
-            name="password"
             label="비밀번호"
+            name="password"
             type="password"
-            id="password"
-            autoComplete="current-password"
             value={formData.password}
             onChange={handleChange}
+            margin="normal"
+            required
           />
-          {error && (
-            <Typography color="error" align="center" sx={{ mt: 2 }}>
-              {error}
-            </Typography>
-          )}
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            로그인
-          </Button>
-          <Box sx={{ textAlign: 'center' }}>
-            <Link href="/register" variant="body2">
-              계정이 없으신가요? 회원가입
-            </Link>
+          <Box sx={{ mt: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+            >
+              로그인
+            </Button>
           </Box>
-        </Box>
+        </form>
       </Paper>
-    </Container>
+    </Box>
   );
 };
 

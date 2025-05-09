@@ -1,7 +1,6 @@
 package com.example.accountingGame.service;
 
 import com.example.accountingGame.entity.Pizza;
-import com.example.accountingGame.entity.PizzaType;
 import com.example.accountingGame.repository.PizzaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,6 @@ public class PizzaService {
 
     private final PizzaRepository pizzaRepository;
 
-    @Autowired
     public PizzaService(PizzaRepository pizzaRepository) {
         this.pizzaRepository = pizzaRepository;
     }

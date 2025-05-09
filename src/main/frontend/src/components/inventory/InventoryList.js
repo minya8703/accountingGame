@@ -12,6 +12,7 @@ import {
   Typography,
   Box,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -19,33 +20,36 @@ import AddIcon from '@mui/icons-material/Add';
 import InventoryEditDialog from './InventoryEditDialog';
 
 const InventoryList = () => {
-  const [inventoryItems, setInventoryItems] = useState([]);
+  const [inventory, setInventory] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchInventoryItems();
-  }, []);
-
-  const fetchInventoryItems = async () => {
+  const fetchInventory = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/inventory');
-      if (!response.ok) {
-        throw new Error('재고 데이터를 불러오는데 실패했습니다.');
-      }
-      const data = await response.json();
-      setInventoryItems(data);
       setError(null);
+      const response = await fetch('/api/inventory');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '재고 목록을 불러오는데 실패했습니다.');
+      }
+      
+      const data = await response.json();
+      setInventory(data);
     } catch (err) {
-      console.error('재고 데이터 조회 에러:', err);
-      setError(err.message);
+      setError(err.message || '알 수 없는 오류가 발생했습니다.');
+      console.error('재고 목록 조회 중 오류:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
   const handleEdit = (item) => {
     setSelectedItem(item);
@@ -65,7 +69,7 @@ const InventoryList = () => {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('재고 항목 삭제에 실패했습니다.');
-      await fetchInventoryItems();
+      await fetchInventory();
     } catch (err) {
       setError(err.message);
     }
@@ -85,7 +89,7 @@ const InventoryList = () => {
       });
 
       if (!response.ok) throw new Error('재고 항목 저장에 실패했습니다.');
-      await fetchInventoryItems();
+      await fetchInventory();
       setOpenDialog(false);
     } catch (err) {
       setError(err.message);
@@ -94,8 +98,32 @@ const InventoryList = () => {
 
   if (loading) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography>데이터를 불러오는 중...</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>재고 목록을 불러오는 중...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" onClick={fetchInventory}>
+          다시 시도
+        </Button>
+      </Box>
+    );
+  }
+
+  if (inventory.length === 0) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="info">
+          등록된 재고가 없습니다.
+        </Alert>
       </Box>
     );
   }
@@ -115,58 +143,36 @@ const InventoryList = () => {
         </Button>
       </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>재료명</TableCell>
-              <TableCell align="right">수량</TableCell>
+              <TableCell>재고 ID</TableCell>
+              <TableCell>이름</TableCell>
+              <TableCell>수량</TableCell>
               <TableCell>단위</TableCell>
-              <TableCell align="right">단가</TableCell>
-              <TableCell align="right">최소 수량</TableCell>
+              <TableCell>최소 수량</TableCell>
               <TableCell align="center">관리</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {inventoryItems.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  재고 항목이 없습니다.
+            {inventory.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.id}</TableCell>
+                <TableCell>{item.name}</TableCell>
+                <TableCell>{item.quantity}</TableCell>
+                <TableCell>{item.unit}</TableCell>
+                <TableCell>{item.minimumQuantity}</TableCell>
+                <TableCell align="center">
+                  <IconButton onClick={() => handleEdit(item)}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton onClick={() => handleDelete(item.id)}>
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
-            ) : (
-              inventoryItems.map((item) => (
-                <TableRow
-                  key={item.id}
-                  sx={{
-                    backgroundColor:
-                      item.quantity <= item.minimumQuantity ? '#fff3e0' : 'inherit',
-                  }}
-                >
-                  <TableCell>{item.ingredientName}</TableCell>
-                  <TableCell align="right">{item.quantity}</TableCell>
-                  <TableCell>{item.unit}</TableCell>
-                  <TableCell align="right">
-                    {item.costPerUnit.toLocaleString()}원
-                  </TableCell>
-                  <TableCell align="right">{item.minimumQuantity}</TableCell>
-                  <TableCell align="center">
-                    <IconButton onClick={() => handleEdit(item)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton onClick={() => handleDelete(item.id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
